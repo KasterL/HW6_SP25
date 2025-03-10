@@ -246,7 +246,6 @@ class ResistorNetwork_2(ResistorNetwork):
         """
         i0 = [0.1, 0.1, 0.1, 0.1, 0.1]  # Initial guess for five currents
         i = fsolve(self.GetKirchoffVals, i0)
-        print("Network 2:")
         print("I1 = {:.1f}".format(i[0]))
         print("I2 = {:.1f}".format(i[1]))
         print("I3 = {:.1f}".format(i[2]))
