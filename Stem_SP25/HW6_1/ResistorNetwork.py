@@ -154,9 +154,9 @@ class ResistorNetwork():
         i0 = [0.1, 0.1, 0.1, 0.1]    #define an initial guess for the currents in the circuit
         i = fsolve(self.GetKirchoffVals,i0)
         # print output to the screen
-        print("I1 = {:0.1f}".format(i[0]))
-        print("I2 = {:0.1f}".format(i[1]))
-        print("I3 = {:0.1f}".format(i[2]))
+        print("I1 = {:.1f}".format(i[0]))
+        print("I2 = {:.1f}".format(i[1]))
+        print("I3 = {:.1f}".format(i[2]))
         return i
 
     def GetKirchoffVals(self,i):
@@ -175,14 +175,13 @@ class ResistorNetwork():
         self.GetResistorByName('ce').Current = i[1]  # I_2 in diagram
         self.GetResistorByName('de_parallel').Current = i[3]  # Resistor from ResistorNetwork_2.txt
         #calculate net current into node c
-        Node_c_Current = sum([i[0],i[1],-i[2]])
+        Node_c_Current = sum([i[0], i[1], -i[2]])  # KCL at node c: I1 + I2 - I3 = 0
+        Node_e_Current = sum([i[1], -i[2], -i[3]])  # KCL at node e: I2 - I3 - I4 = 0
 
-        KVL = self.GetLoopVoltageDrops()  # two equations here
-        KVL.append(Node_c_Current)  # one equation here
-
-        # Additional KCL equation for new node (e or f) in the second circuit
-        Node_f_Current = sum([i[1], -i[2], -i[3]])  # Adjust based on circuit
-        KVL.append(Node_f_Current)  # Adding the extra KCL equation
+        # Kirchhoff's Voltage Law equations
+        KVL = self.GetLoopVoltageDrops()  # Two equations from the loops
+        KVL.append(Node_c_Current)  # Adding the first KCL equation
+        KVL.append(Node_e_Current)  # Adding the second KCL equation
 
         return KVL
 
@@ -240,7 +239,7 @@ class ResistorNetwork():
 
     #endregion
 
-class ResistorNetwork_2(ResistorNetwork):
+class ResistorNetwork_2 (ResistorNetwork):
     #region constructor
     def __init__(self):
         super().__init__()  # runs the constructor of the parent class
@@ -253,7 +252,7 @@ class ResistorNetwork_2(ResistorNetwork):
         """
         Modifies circuit analysis for the second network.
         """
-        i0 = [0.1, 0.1, 0.1, 0.1]  # Initial guess for four unknown currents
+        i0 = [6.0, 10.0, -9.0, 6.0]  # Initial guess for four unknown currents
         i = fsolve(self.GetKirchoffVals, i0)
 
         # Print output to the screen
@@ -277,7 +276,7 @@ class ResistorNetwork_2(ResistorNetwork):
 
         # Node equation for Kirchhoff’s Current Law (sum of currents into node = 0)
         Node_c_Current = sum([i[0], i[1], -i[2]])  # KCL at node c
-        Node_e_Current = sum([i[1], -i[2], -i[3]])  # KCL at node e
+        Node_e_Current = sum([i[1], i[3], -i[2]])  # KCL at node e
 
         # Kirchhoff's Voltage Law equations
         KVL = self.GetLoopVoltageDrops()
