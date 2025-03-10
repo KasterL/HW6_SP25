@@ -9,14 +9,14 @@ def main():
     :return: nothing
     """
     print("Network 1:")
-    Net= # JES MISSING CODE  #Instantiate a ResistorNetwork object
-    Net. # JES MISSING CODE #call the function from Net that builds the resistor network from a text file
-    IVals=Net.AnalyzeCircuit()
+    Net= ResistorNetwork()  #Instantiate a ResistorNetwork object
+    ResistorNetwork() #call the function from Net that builds the resistor network from a text file
+    IVals=Net.AnalyzeCircuit()  # Solve for unknown currents
 
     print("\nNetwork 2:")
-    Net_2 = # JES MISSING CODE  #Instantiate a ResistorNetwork_2 object
-    Net_2. # JES MISSING CODE #call the function from Net that builds the resistor network from a text file
-    IVals_2=Net_2.AnalyzeCircuit()
+    Net_2 = ResistorNetwork_2() #Instantiate a ResistorNetwork_2 object
+    Net_2.BuildNetworkFromFile("ResistorNetwork.txt") #call the function from Net that builds the resistor network from a text file
+    IVals_2=Net_2.AnalyzeCircuit()   # Solve for unknown currents
 # endregion
 
 # region function calls

@@ -11,5 +11,13 @@ class VoltageSource():
         self.Voltage = V
         self.Name=name
         #endregion
+
+    # region methods
+    def get_voltage(self):
+        """
+           Returns the voltage value of the source.
+        """
+        return self.Voltage
     #endregion
+
 #endregion

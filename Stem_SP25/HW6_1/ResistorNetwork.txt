@@ -48,3 +48,8 @@ Nodes = a,b,c,d
 Name = L2
 Nodes = c,d,e
 </Loop>
+
+<Resistor>
+Name = de_parallel
+Resistance = 5
+</Resistor>
