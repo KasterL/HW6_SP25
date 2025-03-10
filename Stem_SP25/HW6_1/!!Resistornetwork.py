@@ -240,38 +240,48 @@ class ResistorNetwork():
     #endregion
 
 class ResistorNetwork_2(ResistorNetwork):
+    #region constructor
+    def __init__(self):
+        super().__init__()  # runs the constructor of the parent class
+        #region attributes
+        #endregion
+    #endregion
+
+    #region methods
     def AnalyzeCircuit(self):
         """
-        Overridden AnalyzeCircuit method for the second resistor network.
+        Modifies circuit analysis for the second network.
         """
-        i0 = [0.1, 0.1, 0.1, 0.1, 0.1]  # Initial guess for five currents
+        i0 = [0.1, 0.1, 0.1, 0.1]  # Initial guess for four unknown currents
         i = fsolve(self.GetKirchoffVals, i0)
-        print("Network 2:")
+
+        # Print output to the screen
         print("I1 = {:.1f}".format(i[0]))
         print("I2 = {:.1f}".format(i[1]))
         print("I3 = {:.1f}".format(i[2]))
         print("I4 = {:.1f}".format(i[3]))
-        print("I5 = {:.1f}".format(i[4]))
+
         return i
 
     def GetKirchoffVals(self, i):
         """
         Applies Kirchhoff’s Laws for the modified circuit.
         """
-        self.GetResistorByName("ad").Current = i[0]  # I1
-        self.GetResistorByName("bc").Current = i[0]  # I1
-        self.GetResistorByName("ce").Current = i[1]  # I2
-        self.GetResistorByName("cd").Current = i[2]  # I3
-        self.GetResistorByName("de_parallel").Current = i[4]  # I5 (new resistor)
+        # Set currents in resistors
+        self.GetResistorByName('ad').Current = i[0]  # I1
+        self.GetResistorByName('bc').Current = i[0]  # I1
+        self.GetResistorByName('cd').Current = i[2]  # I3
+        self.GetResistorByName('ce').Current = i[1]  # I2
+        self.GetResistorByName('de_parallel').Current = i[3]  # I4
 
-        # Kirchhoff Current Law (KCL)
-        Node_c_Current = i[0] - i[2] - i[1]  # At node c: incoming = outgoing
-        Node_b_Current = i[4] - i[0]  # At node b: incoming = outgoing
-        Node_d_Current = i[3] - i[2]  # At node d: incoming = outgoing
+        # Node equation for Kirchhoff’s Current Law (sum of currents into node = 0)
+        Node_c_Current = sum([i[0], i[1], -i[2]])  # KCL at node c: I1 + I2 - I3 = 0
+        Node_e_Current = sum([i[1], -i[2], -i[3]])  # KCL at node e: I2 - I3 - I4 = 0
 
-        # Kirchhoff Voltage Law (KVL)
-        KVL = self.GetLoopVoltageDrops()
-        KVL.extend([Node_c_Current, Node_b_Current, Node_d_Current]) # Add current conservation
+        # Kirchhoff's Voltage Law equations
+        KVL = self.GetLoopVoltageDrops()  # Two equations from the loops
+        KVL.append(Node_c_Current)  # Adding the first KCL equation
+        KVL.append(Node_e_Current)  # Adding the second KCL equation
 
         return KVL
     #endregion
