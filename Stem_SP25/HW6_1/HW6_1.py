@@ -10,7 +10,7 @@ def main():
     """
     print("Network 1:")
     Net= ResistorNetwork()  #Instantiate a ResistorNetwork object
-    ResistorNetwork() #call the function from Net that builds the resistor network from a text file
+    Net.BuildNetworkFromFile("ResistorNetwork.txt")  # Build the network from the file
     IVals=Net.AnalyzeCircuit()  # Solve for unknown currents
 
     print("\nNetwork 2:")

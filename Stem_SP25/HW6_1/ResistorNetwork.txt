@@ -27,6 +27,11 @@ Name = ce
 Resistance = 4
 </Resistor>
 
+<Resistor>
+Name = de_parallel
+Resistance = 5
+</Resistor>
+
 <Source>
 Name = de
 Type = Voltage
@@ -49,7 +54,3 @@ Name = L2
 Nodes = c,d,e
 </Loop>
 
-<Resistor>
-Name = de_parallel
-Resistance = 5
-</Resistor>

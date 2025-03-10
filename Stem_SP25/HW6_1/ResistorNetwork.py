@@ -30,47 +30,42 @@ class ResistorNetwork():
         :return: nothing
         """
         FileTxt = open(filename,"r").read().split('\n')  # reads from file and then splits the string at the new line characters
-        print("Raw File Content:\n", "\n".join(FileTxt))  # Debugging output
-        print(f"Processing line {LineNum}: '{lineTxt}'")  # Debugging output
 
         LineNum = 0  # a counting variable to point to the line of text to be processed from FileTxt
+        lineTxt = ""  # Variable to store the current line being processed
+
         # erase any previous
         self.Resistors = []
         self.VSources = []
         self.Loops = []
-        LineNum = 0
-        lineTxt = ""
+
+        # Process each line in the file
         FileLength = len(FileTxt)
         while LineNum < FileLength:
             lineTxt = FileTxt[LineNum].lower().strip()
-
-            print(f"Processing line {LineNum}: {lineTxt}")  # Debugging
 
             if len(lineTxt) <1:
                 pass # skip
             elif lineTxt[0] == '#':
                 pass  # skips comment lines
             elif "resistor" in lineTxt:
-                print(f"Detected 'resistor' at line {LineNum}: {lineTxt}")  # Debugging
-                LineNum = self.MakeResistor(LineNum, FileTxt)
-
                 LineNum = self.MakeResistor(LineNum, FileTxt)
             elif "source" in lineTxt:
                 LineNum = self.MakeVSource(LineNum, FileTxt)
             elif "loop" in lineTxt:
                 LineNum = self.MakeLoop(LineNum, FileTxt)
-            LineNum+=1
-
-        print(f"Final Resistor List:", [r.Name for r in self.Resistors])  # Debugging
+            else:
+                LineNum+=1  # Move to the next line if no relevant tag is found
+            # Ensure LineNum increments to avoid infinite loop
+            LineNum += 1
+            if LineNum >= FileLength:
+                break  # Stop if we exceed the file length
 
         pass
 
     # region element creation
 
     def MakeResistor(self, N, Txt):
-        print(f"Entering MakeResistor with N={N}, Txt[N]={Txt[N]}")
-        print(f"Calling MakeResistor at line {N}: {Txt[N]}")
-
         """
         Make a resistor object from reading the text file
         :param N: (int) Line number for current processing
@@ -79,21 +74,19 @@ class ResistorNetwork():
         """
         R = Resistor()  # instantiate a new resistor object
         N += 1  # <Resistor> was detected, so move to next line in Txt
-        txt =Txt[N].lower()  # retrieve line from Txt and make it lower case using Txt[N].lower()
-        while "resistor" not in txt:
+        while N < len(Txt):  # Ensure we don't go out of bounds
+            txt = Txt[N].lower().strip()  # Retrieve and lowercase the line
+
             if "name" in txt:
-                R.Name = txt.split('=')[1].strip()
-            if "resistance" in txt:
-                R.Resistance = float(txt.split('=')[1].strip())
-            N += 1  # Move to next line
-            txt = Txt[N].lower()  # Update text for next iteration
+                R.Name = txt.split('=')[1].strip()  # Extract resistor name
+            elif "resistance" in txt:
+                R.Resistance = float(txt.split('=')[1].strip())  # Extract resistance value
+            elif "</resistor>" in txt:
+                break  # Exit the loop when the closing tag is found
 
-        print(f"Adding resistor: {R.Name} with resistance {R.Resistance}")  # Debugging
-        self.Resistors.append(R)
-        print(f"Current Resistor List after adding {R.Name}: {[r.Name for r in self.Resistors]}")
+            N += 1  # Move to the next line
 
-        print(f"Final Resistor List: {[r.Name for r in self.Resistors]}")
-        print(f"Processing Resistor {R.Name} with Resistance {R.Resistance}")
+        self.Resistors.append(R)  # Store resistors properly
 
         return N + 1  # Move past </Resistor> tag
     # endregion
@@ -108,7 +101,8 @@ class ResistorNetwork():
         """
         VS=VoltageSource()  # Instantiate a new voltage source object
         N+=1  # Move to next line
-        txt = Txt[N].lower()  # Retrieve and lowercase the line
+        txt = Txt[N].lower().strip()  # Retrieve and lowercase the line
+
         while "source" not in txt:
             if "name" in txt:
                 VS.Name = txt.split('=')[1].strip()
@@ -117,9 +111,10 @@ class ResistorNetwork():
             if "type" in txt:
                 VS.Type = txt.split('=')[1].strip()
             N+=1
-            txt=Txt[N].lower()   # Update txt to next line
+            txt = Txt[N].lower().strip()   # Update txt to next line
 
         self.VSources.append(VS)
+
         return N
     # endregion
 
@@ -130,17 +125,22 @@ class ResistorNetwork():
         :param Txt: [string] the lines of the text file
         :return: a resistor object
         """
-        L=Loop()  # Instantiate a new loop object
+        loop_name = ""  # Initialize loop name
+        loop_nodes = []  # Initialize loop nodes
+
         N+=1  # Move to next line
-        txt = Txt[N].lower()  # Retrieve and lowercase the line
+        txt = Txt[N].lower().strip() # Retrieve and lowercase the line
         while "loop" not in txt:
             if "name" in txt:
-                L.Name = txt.split('=')[1].strip()
+                loop_name = txt.split('=')[1].strip()
             if "nodes" in txt:
                 txt=txt.replace(" ","")  # Remove any spaces
-                L.Nodes = txt.split('=')[1].strip().split(',')
+                loop_nodes = txt.split('=')[1].strip().split(',')
             N+=1
-            txt=Txt[N].lower()  # Update txt to next line
+            txt = Txt[N].lower().strip()  # Update txt to next line
+
+        # Instantiate the Loop object correctly
+        L = Loop(loop_name, loop_nodes)
 
         self.Loops.append(L)   # Append loop object to the list
         return N
@@ -151,7 +151,7 @@ class ResistorNetwork():
         :return:
         """
         # need to set the currents to that Kirchoff's laws are satisfied
-        i0 = [0.1, 0.1, 0.1]    #define an initial guess for the currents in the circuit
+        i0 = [0.1, 0.1, 0.1, 0.1]    #define an initial guess for the currents in the circuit
         i = fsolve(self.GetKirchoffVals,i0)
         # print output to the screen
         print("I1 = {:0.1f}".format(i[0]))
@@ -161,24 +161,29 @@ class ResistorNetwork():
 
     def GetKirchoffVals(self,i):
         """
-        This function uses Kirchoff Voltage and Current laws to analyze this specific circuit
+        This function uses Kirchoff Voltage and Current laws to analyze this specific circuitw
         KVL:  The net voltage drop for a closed loop in a circuit should be zero
         KCL:  The net current flow into a node in a circuit should be zero
         :param i: a list of currents relevant to the circuit
         :return: a list of loop voltage drops and node currents
         """
         # set current in resistors in the top loop.
-        self.GetResistorByName('ad').Current=i[0]  #I_1 in diagram
-        self.GetResistorByName('bc').Current=i[0]  #I_1 in diagram
-        self.GetResistorByName('cd').Current=i[2]  #I_3 in diagram
-        #set current in resistor in bottom loop.
-        self.GetResistorByName('ce').Current=i[1]  #I_2 in diagram
+        self.GetResistorByName('ad').Current = i[0]  # I_1 in diagram
+        self.GetResistorByName('bc').Current = i[0]  # I_1 in diagram
+        self.GetResistorByName('cd').Current = i[2]  # I_3 in diagram
+        # set current in resistor in bottom loop.
+        self.GetResistorByName('ce').Current = i[1]  # I_2 in diagram
         self.GetResistorByName('de_parallel').Current = i[3]  # Resistor from ResistorNetwork_2.txt
         #calculate net current into node c
         Node_c_Current = sum([i[0],i[1],-i[2]])
 
         KVL = self.GetLoopVoltageDrops()  # two equations here
         KVL.append(Node_c_Current)  # one equation here
+
+        # Additional KCL equation for new node (e or f) in the second circuit
+        Node_f_Current = sum([i[1], -i[2], -i[3]])  # Adjust based on circuit
+        KVL.append(Node_f_Current)  # Adding the extra KCL equation
+
         return KVL
 
     def GetElementDeltaV(self, name):
@@ -212,11 +217,11 @@ class ResistorNetwork():
         for L in self.Loops:
             # Traverse loops in order of nodes and add up voltage drops between nodes
             loopDeltaV=0
-            for n in range(len(L.Nodes)):
-                if n == len(L.Nodes)-1:
-                    name = L.Nodes[0] + L.Nodes[n]
+            for n in range(len(L.nodes)):
+                if n == len(L.nodes)-1:
+                    name = L.nodes[0] + L.nodes[n]
                 else:
-                    name = L.Nodes[n]+L.Nodes[n+1]
+                    name = L.nodes[n]+L.nodes[n+1]
                 loopDeltaV += self.GetElementDeltaV(name)
             loopVoltages.append(loopDeltaV)
         return loopVoltages
@@ -227,13 +232,10 @@ class ResistorNetwork():
         :param name: (str) The name of the resistor to retrieve
         :return: The resistor object matching the given name.
         """
-        print(f"Looking for resistor: {name}, Available: {[r.Name for r in self.Resistors]}")
-
         for r in self.Resistors:
             if r.Name == name:
                 return r
 
-        print(f"Warning: Resistor '{name}' not found! Available: {[r.Name for r in self.Resistors]}")  # Debugging output
         return None
 
     #endregion
@@ -267,18 +269,20 @@ class ResistorNetwork_2(ResistorNetwork):
         Applies Kirchhoff’s Laws for the modified circuit.
         """
         # Set currents in resistors
-        self.GetResistorByName("ad").Current = i[0]
-        self.GetResistorByName("bc").Current = i[0]
-        self.GetResistorByName("cd").Current = i[2]
-        self.GetResistorByName("ce").Current = i[1]
-        self.GetResistorByName("de_parallel").Current = i[3]
+        self.GetResistorByName('ad').Current = i[0]
+        self.GetResistorByName('bc').Current = i[0]
+        self.GetResistorByName('cd').Current = i[2]
+        self.GetResistorByName('ce').Current = i[1]
+        self.GetResistorByName('de_parallel').Current = i[3]
 
         # Node equation for Kirchhoff’s Current Law (sum of currents into node = 0)
-        Node_e_Current = sum([i[0], i[1], -i[2], -i[3]])
+        Node_c_Current = sum([i[0], i[1], -i[2]])  # KCL at node c
+        Node_e_Current = sum([i[1], -i[2], -i[3]])  # KCL at node e
 
         # Kirchhoff's Voltage Law equations
         KVL = self.GetLoopVoltageDrops()
-        KVL.append(Node_e_Current)  # Adding the node equation
+        KVL.append(Node_c_Current)  # Adding the first KCL equation
+        KVL.append(Node_e_Current)  # Adding the second KCL equation
 
         return KVL
     #endregion
